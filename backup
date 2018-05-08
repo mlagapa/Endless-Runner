@@ -1,0 +1,207 @@
+// main.js for Endless Runner
+// Michael Lagapa
+// Code adapted from Nathan's state switching example
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO);
+
+// sets up a state for the main menu
+var MainMenu = function(game) {};
+
+// preload, create, and update functions for the main menu state
+MainMenu.prototype = {
+	
+    // main menu assets to be included here later
+    preload: function() {
+		
+	},
+    
+	create: function() {
+		game.stage.backgroundColor = "#000000"; // sets background color to black
+        var startText = "Firefly\nHit Space to Start!"; // main menu text
+        mainMenuText = game.add.text(game.world.centerX, game.world.centerY, startText, { fontSize: '32px', fill: '#fff' }); // centering the text to the screen dimensions
+        mainMenuText.anchor.setTo(0.50); // sets anchor to the middle of the text, so it's correctly aligned to the center
+	},
+    
+	update: function() {
+        
+        // pressing the spacebar switches the state to the Gameplay state
+		if(game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+			game.state.start('GamePlay');
+		}
+	}
+}
+
+// sets up a state for gameplay
+var GamePlay = function(game) {};
+var player; // initalizes variable for player character
+
+
+GamePlay.prototype = {
+    
+    // gameplay assets 
+	preload: function() {
+		console.log('GamePlay: preload');
+        game.load.atlas('bug', 'assets/img/firefly.png', 'assets/img/firefly.json'); // texture atlas for firefly, includes png and json files
+	},
+    
+	create: function() {
+        
+        textGroup = game.add.group();
+        
+        game.physics.startSystem(Phaser.Physics.ARCADE); // applies arcade physics to game
+		game.stage.backgroundColor = "#0c3372"; // gives background a darkblue color
+        player = game.add.sprite(120, 90, 'bug'); // loads images from texture atlas
+        player.animations.add('fly'); // creates an animation called 'fly'
+        player.animations.play('fly', 120, true); // sets flying animation to play on a loop, even when idle, frames are at 120 so the wings flap faster
+        game.physics.arcade.enable(player); // applies arcade physics to player
+        scoreText = game.add.text(5, 5, 'Score: 0', { fontSize: '32px', fill: '#fff' }); // places score text at the top left
+        
+//          this.game.stage.backgroundColor = 0x4488ca;
+
+        textGroup.add(scoreText);
+    // The radius of the circle of light
+    this.LIGHT_RADIUS = 100;
+
+
+    // Create the shadow texture
+    this.shadowTexture = this.game.add.bitmapData(this.game.width, this.game.height);
+
+    // Create an object that will use the bitmap as a texture
+    var lightSprite = this.game.add.image(0, 0, this.shadowTexture);
+
+    // Set the blend mode to MULTIPLY. This will darken the colors of
+    // everything below this sprite.
+    lightSprite.blendMode = Phaser.blendModes.MULTIPLY;
+
+    // Simulate a pointer click/tap input at the center of the stage
+    // when the example begins running.
+//    this.game.input.activePointer.x = this.game.width/2;
+//    this.game.input.activePointer.y = this.game.height/2;
+	},
+    
+	update: function() {
+
+    this.shadowTexture.context.fillStyle = 'rgb(30, 30, 30)';
+    this.shadowTexture.context.fillRect(0, 0, this.game.width, this.game.height);
+        
+    // movement taken from first game, applied to vertical and horizontal movement
+    cursors = game.input.keyboard.createCursorKeys();
+    lightButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+    
+    //  sets player movement to 0
+//    player.x = 0;
+//    player.y = 0;
+    player.body.velocity.x = 0;
+    player.body.velocity.y = 0;
+    
+
+    if (cursors.left.isDown)
+    {
+        //  moves the player left
+        player.body.velocity.x = -150;
+    }
+     if (cursors.right.isDown)
+    {
+        //  moves the player right
+        player.body.velocity.x = 150;
+    }
+     if (cursors.up.isDown)
+    {
+        //  moves the player up
+        player.body.velocity.y = -150;
+    }
+     if (cursors.down.isDown)
+    {
+        //  moves the player down
+        player.body.velocity.y = 150;
+    }
+     if (!lightButton.isDown){
+         this.updateShadowTexture();
+    }
+        if (lightButton.isDown){
+            this.lightOff();
+        }
+    
+        game.world.bringToTop(textGroup);
+        // Switch from gameplay state to game over state, for debugging
+        // GamePlay logic
+        // if(game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+        // game.state.start('GameOver');
+        // }
+	},
+    
+    updateShadowTexture: function() {
+    // This function updates the shadow texture (this.shadowTexture).
+    // First, it fills the entire texture with a dark shadow color.
+    // Then it draws a white circle centered on the pointer position.
+    // Because the texture is drawn to the screen using the MULTIPLY
+    // blend mode, the dark areas of the texture make all of the colors
+    // underneath it darker, while the white area is unaffected.
+
+    // Draw shadow
+//    this.shadowTexture.context.fillStyle = 'rgb(30, 30, 30)';
+//    this.shadowTexture.context.fillRect(0, 0, this.game.width, this.game.height);
+
+    // Draw circle of light with a soft edge
+    var gradient = this.shadowTexture.context.createRadialGradient(
+        player.body.x + 70, player.body.y + 55, this.LIGHT_RADIUS * 0.75,
+        player.body.x + 70, player.body.y + 55, this.LIGHT_RADIUS);
+    gradient.addColorStop(0, 'rgba(30, 30, 30, 1.0)');
+    gradient.addColorStop(1, 'rgba(30, 30, 30, 0.0)');
+
+    this.shadowTexture.context.beginPath();
+    this.shadowTexture.context.fillStyle = gradient;
+    this.shadowTexture.context.arc(player.body.x + 70, player.body.y + 55,
+        this.LIGHT_RADIUS, 0, Math.PI*2);
+    this.shadowTexture.context.fill();
+
+    // This just tells the engine it should update the texture cache
+    this.shadowTexture.dirty = true;
+        
+},
+    lightOff: function(){
+            var gradient = this.shadowTexture.context.createRadialGradient(
+        player.body.x + 70, player.body.y + 55, this.LIGHT_RADIUS * 0.75,
+        player.body.x + 70, player.body.y + 55, this.LIGHT_RADIUS);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+
+    this.shadowTexture.context.beginPath();
+    this.shadowTexture.context.fillStyle = gradient;
+    this.shadowTexture.context.arc(player.body.x + 70, player.body.y + 55,
+        this.LIGHT_RADIUS, 0, Math.PI*2);
+    this.shadowTexture.context.fill();
+ this.shadowTexture.dirty = true;
+         
+    }
+    
+}
+
+// sets up game over state
+// Currently not yet reachable other than through debugging line a few lines above
+var GameOver = function(game) {};
+
+GameOver.prototype = {
+
+    preload: function() {
+		console.log('GameOver: preload');
+	},
+	
+    create: function() {
+		console.log('GameOver: create');
+		game.stage.backgroundColor = "#bb11ee";
+	},
+	
+    update: function() {
+		// hit spacebar to return to main menu state
+		if(game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+			game.state.start('MainMenu');
+		}
+	}
+}
+
+// allows StateManager to recognize states, runs MainMenu state when the game starts
+game.state.add('MainMenu', MainMenu);
+game.state.add('GamePlay', GamePlay);
+game.state.add('GameOver', GameOver);
+game.state.start('MainMenu');
